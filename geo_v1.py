@@ -106,6 +106,7 @@ class Transformacje:
                          ,[cos(fi)        , 0      ,    sin(P)  ]])
             return R 
 
+
         def xyz2neu(P,L,dX): #dX is an array!
             """
             """
