@@ -116,7 +116,6 @@ class Transformacje:
             return dx #array !
         
         
-       
         def sigma(self,P):
             """
             """
