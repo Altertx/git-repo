@@ -126,18 +126,25 @@ class Transformacje:
         Parametres:
         ----------
         P,L,H - float - szerokosc, dlugosc oraz wysokosc elipsoidalna [stopnie dziesietne i metry]
-        
+        inp - [str] , optional: dec_degree, radians
         Returns:
         --------
         X,Y,Z - float - wspolrzedne ortokartezjańskie [m]
+        
         """
         if inp == 'dec_degree':
             P = P*pi/180
             L = L*pi/180
-        N = self.Np(P)
-        X = (N+H)*cos(P)*cos(L)
-        Y = (N+H)*cos(P)*sin(L)
-        Z = (N*(1 -self.ecc2 )+H)*sin(P)
+            N = self.Np(P)
+            X = (N+H)*cos(P)*cos(L)
+            Y = (N+H)*cos(P)*sin(L)
+            Z = (N*(1 -self.ecc2 )+H)*sin(P)
+    
+        elif inp == 'radians':
+            N = self.Np(P)
+            X = (N+H)*cos(P)*cos(L)
+            Y = (N+H)*cos(P)*sin(L)
+            Z = (N*(1 -self.ecc2 )+H)*sin(P)
         return X,Y,Z
         
     def Rneu(self,P,L):
