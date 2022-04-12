@@ -5,6 +5,8 @@ class Transformacje:
     def __init__(self, model: str = "wgs84"):
         """
         Parametry elipsoid:
+            L0_2000 - południk osiowy dla układu PL-2000 [rad]
+            L0_1992 - południk osiowy dla układu PL-1992 [rad]
             a - duża półoś elipsoidy - promień równikowy
             b - mała półoś elipsoidy - promień południkowy
             flat - spłaszczenie
@@ -32,17 +34,13 @@ class Transformacje:
 
     def deg2dms(self, dd):
         """
-        
-
         Parameters
         ----------
-        dd : TYPE
-            DESCRIPTION.
+        dd : float - stopnie w liczbie dziesiętnej [stopnie]
 
         Returns
         -------
-        dms : TYPE
-            DESCRIPTION.
+        dms : tuple - stopnie, minuty, sekundy
 
         """
         deg = int(np.trunc(dd))
@@ -54,11 +52,27 @@ class Transformacje:
     
     def Np(self,lat):
         """
+        Max. promień w I wertykale w kierunku głownym.
+        Parametry
+        ----------
+        lat : float - szerokosc geodezyjna [radians]
+        
+        Returns
+        -------
+        N : float - promien w I wertykale [m]
         """
         N = self.a/sqrt(1-self.ecc2*sin(lat)**2)
         return N
     def Mp(self,lat):
         """
+        Min. promień w kwadracie I mimosrodu w kierunku głównym.
+        Parametry
+        ---------
+        lat : float - szerokosc geodezyjna [radians]
+        
+        Returns
+        -------
+        M : float - promien w kwadracie I mimosrodu
         """
         M = (self.a*(1-self.ecc2))/sqrt((1-self.ecc2*sin(lat)**2)**3)
         return M
@@ -107,6 +121,15 @@ class Transformacje:
             
     def plh2xyz(self,P,L,H, inp = 'dec_degree'):
         """
+        Transformacja odwrotna do algorytmu Hirvonena- transformacja współrzędnych geodezyjnych:
+        szerokosc, dlugosc i wysokosc elipsoidalna na współrzędne ortokartezjańskie X,Y,Z
+        Parametres:
+        ----------
+        P,L,H - float - szerokosc, dlugosc oraz wysokosc elipsoidalna [stopnie dziesietne i metry]
+        
+        Returns:
+        --------
+        X,Y,Z - float - wspolrzedne ortokartezjańskie [m]
         """
         if inp == 'dec_degree':
             P = P*pi/180
@@ -119,24 +142,53 @@ class Transformacje:
         
     def Rneu(self,P,L):
         """
+        Macierz obrotu R
+        Parametres:
+        ----------
+        P,L - float - szerokosc i dlugosc geodezyjna [radians]
+        
+        Returns:
+        --------
+        R - array - macierz obrotu
+        
         """
         R = np.array([[-sin(P)*cos(L) , -sin(L), cos(P)*cos(L)]
                       ,[-sin(P)*sin(L) , cos(L) , cos(P)*sin(L)]
-                      ,[cos(fi)        , 0      ,    sin(P)  ]])
+                      ,[cos(P)        , 0      ,    sin(P)  ]])
         return R 
 
 
-    def xyz2neu(self,P,L,dX): #dX is an array!
+    def xyz2neu(self,P,L,dX,inp = 'dec_degree'): #dX is an array!
         """
+        Macierz delta_N,delta_E,delta_U. Posłużenie się funkcją Rneu.
+        Parametres:
+        ----------
+        P,L - float - współrzędne elipsoidalne punktu referencyjnego dla układu topocentrycznego [stopnie dziesietne]
+        dX - array - różnice między współrzędnymi kolejnych punktów, a współrzędnymi punktu referencyjnego w układzie ortokartezjańskim [m]
+        
+        Returns:
+        --------
+        dx - array - macierz delta_N,delta_E,delta_U [m]
         """
-        R = Rneu(P,L)
+        if inp == 'dec_degree':
+            P = P*pi/180
+            L = L*pi/180
+        R = self.Rneu(P,L)
         RT = np.transpose(R)
-        dx = np.dot(RT,dX)
+        dx = RT @ dX
         return dx #array !
         
         
     def sigma(self,P):
         """
+        Wartosc sigmy
+        Paramtetres:
+        -----------
+        P - float - szerokosc elipsoidalna [radians]
+        
+        Returns:
+        --------
+        si - float - sigma
         """
         A0 = 1-(self.ecc2/4)-((3*(self.ecc2**2))/64)-((5*(self.ecc2**3))/256);
         A2 = (3/8)*(self.ecc2+(self.ecc2**2/4)+((15*(self.ecc2**3))/128));
@@ -148,6 +200,13 @@ class Transformacje:
         
     def pl2xy(self,P,L,L0, inp = 'dec_degree'):
         """
+        Transformacja wspolrzednych geodezyjnych na wspolrzedne w układzie Gaussa-Krugera
+        Parametres:
+        P,L - float - szerokosc oraz dlugosc geodezyjna [stopnie dziesietne]
+        L0 - float - poludnik osiowy [radians]
+        
+        Returns:
+        xgk,ygk - float - wspolrzedne w ukladzie Gaussa-Krugera [m]
         """
         if inp == 'dec_degree':
             P=P*pi/180
@@ -169,6 +228,15 @@ class Transformacje:
         
     def f1(self,xgk):
         """
+        Funkcja pomocnicza do obliczenia wspolrzednych geodezyjnych z dokladnoscia do
+        0.000001 sekundy
+        Parametres:
+        -----------
+        xgk - wspolrzedna X w ukladzie Gaussa-Krugera [m]
+        
+        Returns:
+        --------
+        f - wartosc pomocnicza do szerokosci geodezyjnej
         """
         A0 = 1-(self.ecc2/4)-((3*(self.ecc2**2))/64)-((5*(self.ecc2**3))/256) 
         f = xgk/(self.a*A0) 
@@ -184,6 +252,19 @@ class Transformacje:
         
     def xy2pl(self,xgk,ygk,L0, output = 'dec_degree'):
         """
+        Transformacja wspolrzednych w ukladzie Gaussa-Krugera na wspolrzedne geodezyjne. Wykorzystana
+        funkcja f1
+        Parametres:
+        -----------
+        xgk,ygk - float - wspolrzedne w ukladzie Gaussa-Krugera [m]
+        L0 - float - poludnik osiowy [radians]
+        
+        Returns:
+        --------
+        p,l - float - wspolrzedne geodezyjne [stopnie dziesietne]
+        output - optional, default
+        dec_degree - stopnie dziesietne
+        dms - degrees, minutes, seconds
         """
         fp = self.f1(xgk)
         N = self.Np(fp)
@@ -208,6 +289,14 @@ class Transformacje:
         
     def u1992(self,xgk,ygk):
         """
+        Transformacja współrzędnych w układzie Gaussa-Krugera do układu PL-1992
+        Parametres:
+        -----------
+        xgk,ygk - float - współrzędne w układzie Gaussa-Krugera [m]
+        
+        Returns:
+        --------
+        x,y - float - współrzędne w układzie PL-1992 [m]
         """
         x = xgk * 0.9993 - 5300000
         y = ygk * 0.9993 + 500000
@@ -215,35 +304,75 @@ class Transformacje:
         
     def u2000(self,xgk,ygk,L0 = 21*pi/180): #L0 15st,18st,21st,24st
         """
+        Transformacja współrzędnych w układzie Gaussa-Krugera do układu PL-2000
+        Parametres:
+        -----------
+        xgk,ygk - float - współrzędne w układzie Gaussa-Krugera [m]
+        L0 - float - poludnik osiowy [radians]
+        
+        Returns:
+        --------
+        x,y - float - współrzędne w układzie PL-2000 [m]
         """
         x = xgk * 0.999923
         y = ygk * 0.999923 + (L0*180/pi/3) * 1000000 + 500000
         return x,y
+    
+    def s_azimuth_elevation(self,dN,dE,dU):
+        """
+        Obliczenie odległosci 3D, azymutu oraz kąta elewacji dla punktu kolejnego oraz punktu
+        odniesienia w ukladzie topocentrycznym
+        Parametres:
+        -----------
+        dN,dE,dU - float - współrzędne w układzie topocentrycznym [m]
+        
+        Returns:
+        --------
+        s - float - odleglosc 3D [m]
+        Az,z - float - azymut oraz kąt elewacji [stopnie dziesietne]
+        """
+        s = sqrt(dN**2 + dE**2 + dU**2)
+        Az = atan2(dE, dN)
+        z = acos(dU/s)
+        
+        if Az > 0 and z > 0:
+            Az = (Az)*180/pi
+            z = (z)*180/pi
+        elif Az < 0 and z < 0:
+            Az = (Az+2*pi)*180/pi
+            z = (z+2*pi)*180/pi
+        elif Az < 0 and z > 0:
+            Az = (Az+2*pi)*180/pi
+            z = z*180/pi
+        elif Az > 0 and z < 0:
+            Az = Az*180/pi
+            z = (z+2*pi)*180/pi            
+        return s,Az,z
 
 
-if __name__ == "__main__":
-    # utworzenie obiektu
-    geo = Transformacje(model = "wgs84")
-    # dane XYZ geocentryczne
-    X = 3664940.500; Y = 1409153.590; Z = 5009571.170
+# if __name__ == "__main__":
+#     # utworzenie obiektu
+#     geo = Transformacje(model = "wgs84")
+#     # dane XYZ geocentryczne
+#     X = 3664940.500; Y = 1409153.590; Z = 5009571.170
     
 
     
-    phi, lam, h = geo.xyz2plh(X, Y, Z)
-    print(phi,lam,h)
+#     phi, lam, h = geo.xyz2plh(X, Y, Z)
+#     print(phi,lam,h)
     
-    x,y,z = geo.plh2xyz(phi,lam,h)
-    print(x,y,z)
+#     x,y,z = geo.plh2xyz(phi,lam,h)
+#     print(x,y,z)
     
-    xgk_2000,ygk_2000 = geo.pl2xy(phi,lam,geo.L0_2000)
+#     xgk_2000,ygk_2000 = geo.pl2xy(phi,lam,geo.L0_2000)
     
-    x2000,y2000 = geo.u2000(xgk_2000,ygk_2000)
-    print(x2000,y2000)
+#     x2000,y2000 = geo.u2000(xgk_2000,ygk_2000)
+#     print(x2000,y2000)
     
-    xgk_1992,ygk_1992 = geo.pl2xy(phi, lam, geo.L0_1992)
+#     xgk_1992,ygk_1992 = geo.pl2xy(phi, lam, geo.L0_1992)
     
-    x92,y92 = geo.u1992(xgk_1992,ygk_1992)
-    print(x92,y92)
+#     x92,y92 = geo.u1992(xgk_1992,ygk_1992)
+#     print(x92,y92)
     
         
     
