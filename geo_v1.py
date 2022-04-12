@@ -355,33 +355,3 @@ class Transformacje:
             Az = Az*180/pi
             z = (z+2*pi)*180/pi            
         return s,Az,z
-
-
-# if __name__ == "__main__":
-#     # utworzenie obiektu
-#     geo = Transformacje(model = "wgs84")
-#     # dane XYZ geocentryczne
-#     X = 3664940.500; Y = 1409153.590; Z = 5009571.170
-    
-
-    
-#     phi, lam, h = geo.xyz2plh(X, Y, Z)
-#     print(phi,lam,h)
-    
-#     x,y,z = geo.plh2xyz(phi,lam,h)
-#     print(x,y,z)
-    
-#     xgk_2000,ygk_2000 = geo.pl2xy(phi,lam,geo.L0_2000)
-    
-#     x2000,y2000 = geo.u2000(xgk_2000,ygk_2000)
-#     print(x2000,y2000)
-    
-#     xgk_1992,ygk_1992 = geo.pl2xy(phi, lam, geo.L0_1992)
-    
-#     x92,y92 = geo.u1992(xgk_1992,ygk_1992)
-#     print(x92,y92)
-    
-        
-    
-# w sprawozdaniu link do repozytorium githubowego a także instrukcja, opis
-# co w naszych programach sie znajduje

@@ -1,6 +1,3 @@
-#!/usr/bin/python
-# -*- coding: UTF-8 -*-
-
 import numpy as np
 from geo_v1 import *
 
@@ -69,5 +66,4 @@ np.savetxt("wsp_out.txt", results , delimiter=',', fmt = ['%11.8f', '%12.8f', '%
 header = 'konwersja współrzednych geodezyjnych \nAlbert Kalinowski\n\nfi[dec_d]   la[dec_d]     h[m]'
 '     X2000[m]    Y2000[m]     X1992[m]   Y1992[m]      N[m]    E[m]   U[m]   s[m]    Az[dec_d]    z[dec_d]')
 
-    
-# np.savetxt("wsp_out.txt" , wyniki , delimiter = ',',fmt = ['%10.2f', '%10.2f', '%10.3f'])
+
